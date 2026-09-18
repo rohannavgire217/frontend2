@@ -4,7 +4,8 @@ import SignalPulse from "./components/SignalPulse";
 import SatelliteMap from "./components/SatelliteMap";
 import { AnalyticsPage } from "./components/MissionPages";
 import ClassificationPage from "./components/ClassificationPage";
-import ScenarioLab from "./components/ScenarioLab";
+import { getBackendHealth, getEntities } from "./api";
+
 
 const alerts = [
   [
@@ -144,7 +145,8 @@ function Alerts({ selected, setSelected, alertQueue, onReview, detailAlert, onOp
                 <small>now</small>
               </p>
               <h3>{alert[2]}</h3>
-              <span>{alert[3]}</span>
+              <sp
+              >{alert[3]}</sp>
             </div>
             <strong>-&gt;</strong>
           </button>
@@ -193,7 +195,14 @@ function getDayPart() {
   return hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
 }
 
-function LaunchSequence() {
+function LaunchSequence({ messageIndex }) {
+  const launchMessages = [
+    "Connecting satellite intelligence",
+    "Opening intelligence layer",
+    "Syncing thermal feed",
+    "Opening dashboard",
+  ];
+
   return (
     <main className="launch-screen" aria-label="Opening Pyrewatch dashboard">
       <div className="launch-grid" />
@@ -204,6 +213,21 @@ function LaunchSequence() {
       </div>
       <div className="launch-particles" aria-hidden="true">
         <i /><i /><i /><i /><i /><i /><i /><i />
+      </div>
+      <div className="starfield" aria-hidden="true">
+        {Array.from({ length: 34 }, (_, index) => (
+          <span
+            key={index}
+            style={{
+              left: `${(index * 13 + 7) % 100}%`,
+              top: `${(index * 17 + 9) % 100}%`,
+              width: `${(index % 3) + 2}px`,
+              height: `${(index % 3) + 2}px`,
+              animationDelay: `${(index % 8) * 0.8}s`,
+              animationDuration: `${3 + (index % 5)}s`,
+            }}
+          />
+        ))}
       </div>
       <div className="launch-radar" aria-hidden="true">
         <span className="launch-orbit launch-orbit-one" />
@@ -227,7 +251,10 @@ function LaunchSequence() {
       <div className="launch-copy">
         <p className="eyebrow">PYREWATCH / CONTROL ROOM</p>
         <h1>Reading the heat.</h1>
-        <div className="launch-status"><i /> <span className="launch-status-cycle">Connecting satellite intelligence</span></div>
+        <div className="launch-status">
+          <i />
+          <span className="launch-status-cycle">{launchMessages[messageIndex % launchMessages.length]}</span>
+        </div>
         <div className="launch-progress" aria-hidden="true"><i /></div>
       </div>
       <div className="launch-footer">
@@ -243,11 +270,13 @@ function LaunchSequence() {
 
 function App() {
   const [launching, setLaunching] = useState(true);
+  const [launchMessageIndex, setLaunchMessageIndex] = useState(0);
   const [active, setActive] = useState("Overview");
   const [selected, setSelected] = useState(alerts[0]);
   const [alertQueue, setAlertQueue] = useState(alerts);
   const [alertDetail, setAlertDetail] = useState(null);
   const [liveFeed, setLiveFeed] = useState(true);
+  const [backendStatus, setBackendStatus] = useState("connecting");
   const liveCursor = useRef(0);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("pyrewatch-theme") === "dark",
@@ -261,8 +290,41 @@ function App() {
     localStorage.setItem("pyrewatch-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
   useEffect(() => {
-    const launchTimer = window.setTimeout(() => setLaunching(false), 10000);
-    return () => window.clearTimeout(launchTimer);
+    let mounted = true;
+    Promise.allSettled([getBackendHealth(), getEntities()]).then(([healthResult, entitiesResult]) => {
+      if (!mounted) return;
+      setBackendStatus(healthResult.status === "fulfilled" ? "connected" : "offline");
+      if (entitiesResult.status === "fulfilled" && entitiesResult.value.length > 0) {
+        const backendAlerts = entitiesResult.value.map((entity, index) => [
+          `EN-${String(index + 1).padStart(4, "0")}`,
+          "Watch",
+          "Thermal entity received",
+          `${entity.latitude.toFixed(3)}, ${entity.longitude.toFixed(3)}`,
+          "72",
+          "amber",
+        ]);
+        setAlertQueue(backendAlerts);
+        setSelected(backendAlerts[0]);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  useEffect(() => {
+    const launchMessageTimer = window.setInterval(() => {
+      setLaunchMessageIndex((current) => (current + 1) % 4);
+    }, 2200);
+
+    const launchTimer = window.setTimeout(() => {
+      setLaunching(false);
+      window.clearInterval(launchMessageTimer);
+    }, 7600);
+
+    return () => {
+      window.clearInterval(launchMessageTimer);
+      window.clearTimeout(launchTimer);
+    };
   }, []);
   useEffect(() => {
     if (launching || !liveFeed) return undefined;
@@ -276,8 +338,8 @@ function App() {
     }, 7000);
     return () => window.clearInterval(liveTimer);
   }, [launching, liveFeed]);
-  if (launching) return <LaunchSequence />;
-  const nav = ["Overview", "Live map", "Alerts", "Analytics", "Classification", "Demo lab"];
+  if (launching) return <LaunchSequence messageIndex={launchMessageIndex} />;
+  const nav = ["Overview", "Live map", "Alerts", "Analytics", "Classification"];
   const overview = (
     <>
       <section className="mission-pulse">
@@ -437,7 +499,6 @@ function App() {
     );
   if (active === "Analytics") content = <AnalyticsPage />;
   if (active === "Classification") content = <ClassificationPage onNavigate={setActive} />;
-  if (active === "Demo lab") content = <ScenarioLab />;
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -492,7 +553,7 @@ function App() {
           </div>
           <div className="top-actions">
             <span className="system-pill">
-              <i /> System healthy
+              <i /> {backendStatus === "connected" ? "Backend connected" : backendStatus === "offline" ? "Backend offline" : "Connecting backend"}
             </span>
             <button
               className="theme-toggle"

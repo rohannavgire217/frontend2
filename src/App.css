@@ -225,6 +225,22 @@ body {
 .launch-particles i:nth-child(7) { top: 42%; left: 7%; animation-delay: -3.6s; }
 .launch-particles i:nth-child(8) { top: 91%; left: 43%; animation-delay: -0.8s; }
 
+.starfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.starfield span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: rgba(149, 255, 208, 0.95);
+  box-shadow: 0 0 10px rgba(149, 255, 208, 0.9), 0 0 18px rgba(149, 255, 208, 0.5);
+  animation: star-twinkle ease-in-out infinite;
+}
+
 .launch-radar {
   position: absolute;
   width: min(78vw, 760px);
@@ -362,9 +378,12 @@ body {
 
 .launch-status-cycle {
   display: inline-block;
-  min-width: 250px;
+  min-width: 280px;
   text-align: left;
-  animation: launch-status-cycle 10s steps(1, end) infinite;
+  color: #b2d8c7;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  animation: launch-status-cycle 2.2s ease-in-out infinite alternate;
 }
 
 .launch-progress {
@@ -436,12 +455,35 @@ body {
 @keyframes launch-copy-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes launch-scanline { from { transform: translateY(-35vh); opacity: 0; } 20%, 75% { opacity: 1; } to { transform: translateY(35vh); opacity: 0; } }
 @keyframes launch-particle { 50% { opacity: 0.25; transform: translate(12px, -16px) scale(0.6); } }
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+  65% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
 @keyframes launch-progress { to { width: 100%; } }
 @keyframes launch-corner-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes launch-status-cycle {
-  0%, 30% { opacity: 1; }
-  31%, 60% { opacity: 0.45; }
-  61%, 100% { opacity: 1; }
+  0% { opacity: 0.5; transform: translateY(4px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0.8; transform: translateY(-4px); }
+}
+
+.launch-screen {
+  animation: launch-shell 0.9s ease-out both;
+}
+
+@keyframes launch-shell {
+  0% { opacity: 0.5; transform: scale(0.985); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 700px) {
