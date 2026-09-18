@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import html2canvas from "html2canvas";
 import "leaflet/dist/leaflet.css";
 
 const detections = [
@@ -69,11 +70,107 @@ const thermalLocationNames = [
   "Shillong", "Guwahati", "Itanagar", "Kohima", "Aizawl", "Agartala",
 ];
 
-function SatelliteMap({ selected, setSelected, scanning = true, showLayers = true, onScanAlert }) {
+function SatelliteMap({
+  selected,
+  setSelected,
+  scanning = true,
+  showLayers = true,
+  range = "Live",
+  onToggleLayers,
+  onRangeChange,
+  onMinimize,
+  onScanAlert,
+}) {
   const mapNode = useRef(null);
+  const mapShellRef = useRef(null);
   const mapRef = useRef(null);
+  const imageryLayerRef = useRef(null);
+  const streetLayerRef = useRef(null);
+  const measureActiveRef = useRef(false);
+  const measureStartRef = useRef(null);
   const initialView = useRef(true);
   const [scanAlert, setScanAlert] = useState(null);
+  const [viewMode, setViewMode] = useState("satellite");
+  const [measureActive, setMeasureActive] = useState(false);
+  const [mapFeedback, setMapFeedback] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+
+  const notify = (message) => {
+    setMapFeedback(message);
+  };
+
+  const handleLocation = () => {
+    if (!navigator.geolocation) {
+      notify("Location is not available in this browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        mapRef.current?.flyTo([coords.latitude, coords.longitude], 8, { duration: 0.8 });
+        notify("Map centered on your location");
+      },
+      () => notify("Location permission was not granted"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const handleShare = async () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const center = map.getCenter();
+    const shareUrl = `${window.location.href}#map=${center.lat.toFixed(3)},${center.lng.toFixed(3)},${map.getZoom()}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Pyrewatch map view", url: shareUrl });
+        notify("Map view shared");
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      notify("Map view link copied");
+    } catch {
+      notify("Map view ready to share");
+    }
+  };
+
+  const handleCapture = async () => {
+    if (!mapShellRef.current || isCapturing) return;
+    setIsCapturing(true);
+    notify("Preparing map image...");
+    try {
+      const canvas = await html2canvas(mapShellRef.current, {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#304d43",
+        logging: false,
+        ignoreElements: (element) =>
+          element.classList.contains("map-toolbar") ||
+          element.classList.contains("map-feedback") ||
+          element.classList.contains("map-help"),
+      });
+      const link = document.createElement("a");
+      link.download = `pyrewatch-map-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      notify("Map image downloaded");
+    } catch {
+      notify("Could not capture the map image");
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const selectDetection = (detection, id = detection.id, label = "Satellite detection") => {
+    setSelected([
+      id,
+      detection.tone === "#ff6653" ? "Critical" : "Watch",
+      detection.name,
+      label,
+      "now",
+      detection.tone === "#ff6653" ? "94" : detection.tone === "#48d09e" ? "81" : "72",
+      detection.tone === "#ff6653" ? "coral" : detection.tone === "#ffbb4a" ? "amber" : "mint",
+    ]);
+  };
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) return undefined;
@@ -91,14 +188,18 @@ function SatelliteMap({ selected, setSelected, scanning = true, showLayers = tru
       inertiaDeceleration: 2200,
     }).setView([21.2, 79.2], 4.35);
     L.control.zoom({ position: "bottomright" }).addTo(map);
-    L.tileLayer(
+    imageryLayerRef.current = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 18, attribution: "Tiles © Esri" },
+      { maxZoom: 18, crossOrigin: true, attribution: "Tiles © Esri" },
     ).addTo(map);
+    streetLayerRef.current = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19, crossOrigin: true, attribution: "© OpenStreetMap contributors" },
+    );
     // Geographic reference labels: countries, states, and cities across India.
     L.tileLayer(
       "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 18, pane: "overlayPane", zIndex: 320 },
+      { maxZoom: 18, crossOrigin: true, pane: "overlayPane", zIndex: 320 },
     ).addTo(map);
     detections.forEach((detection) => {
       const marker = L.marker(detection.position, {
@@ -118,44 +219,79 @@ function SatelliteMap({ selected, setSelected, scanning = true, showLayers = tru
           offset: [0, -8],
         },
       );
-      marker.on("click", () =>
-        setSelected([
-          detection.id,
-          detection.id === "AL-2841" ? "Critical" : "Watch",
-          detection.name,
-          "Satellite detection",
-          "now",
-          detection.id === "AL-2841" ? "94" : "72",
-          detection.tone === "#ff6653"
-            ? "coral"
-            : detection.tone === "#ffbb4a"
-              ? "amber"
-              : "mint",
-        ]),
-      );
+      marker.on("click", () => selectDetection(detection));
     });
     indiaThermalField.forEach(([lat, lng, tone], index) => {
-      L.marker([lat, lng], {
-        interactive: false,
+      const fieldDetection = {
+        id: `TH-${String(index + 1).padStart(3, "0")}`,
+        name: thermalLocationNames[index] || `Thermal signal ${index + 1}`,
+        position: [lat, lng],
+        tone,
+      };
+      const marker = L.marker([lat, lng], {
+        interactive: true,
         icon: L.divIcon({
           className: "thermal-marker-wrap thermal-field-wrap",
           html: `<span class="thermal-marker thermal-field-marker" style="--marker-color:${tone}"><b></b><i></i></span>`,
           iconSize: [28, 28],
           iconAnchor: [14, 14],
         }),
-      }).addTo(map).bindTooltip(thermalLocationNames[index] || `Thermal signal ${index + 1}`, {
+      }).addTo(map).bindTooltip(fieldDetection.name, {
         permanent: false,
         direction: "top",
         className: "thermal-label thermal-field-label",
         offset: [0, -8],
       });
+      marker.on("click", () => selectDetection(fieldDetection, fieldDetection.id, "Regional thermal signal"));
+    });
+    map.on("click", (event) => {
+      if (measureActiveRef.current) {
+        if (!measureStartRef.current) {
+          measureStartRef.current = event.latlng;
+          notify("Select a second point to measure");
+          return;
+        }
+        const distance = measureStartRef.current.distanceTo(event.latlng);
+        measureStartRef.current = null;
+        measureActiveRef.current = false;
+        setMeasureActive(false);
+        notify(`Measured distance: ${(distance / 1000).toFixed(2)} km`);
+        return;
+      }
+      const latitude = event.latlng.lat.toFixed(3);
+      const longitude = event.latlng.lng.toFixed(3);
+      setSelected([
+        "MAP-POINT",
+        "Watch",
+        "Map location selected",
+        `${latitude}°, ${longitude}°`,
+        "now",
+        "48",
+        "amber",
+      ]);
     });
     mapRef.current = map;
     return () => {
       map.remove();
       mapRef.current = null;
+      imageryLayerRef.current = null;
+      streetLayerRef.current = null;
     };
   }, [setSelected]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const imageryLayer = imageryLayerRef.current;
+    const streetLayer = streetLayerRef.current;
+    if (!map || !imageryLayer || !streetLayer) return;
+    if (viewMode === "street") {
+      map.removeLayer(imageryLayer);
+      streetLayer.addTo(map);
+    } else {
+      map.removeLayer(streetLayer);
+      imageryLayer.addTo(map);
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -197,12 +333,65 @@ function SatelliteMap({ selected, setSelected, scanning = true, showLayers = tru
   }, [scanning, setSelected, onScanAlert]);
 
   return (
-    <div className={"satellite-map-shell " + (scanning ? "is-scanning " : "") + (showLayers ? "" : "layers-hidden") }>
+    <div ref={mapShellRef} className={"satellite-map-shell " + (scanning ? "is-scanning " : "") + (showLayers ? "" : "layers-hidden") }>
       <div
         ref={mapNode}
         className="satellite-map"
         aria-label="Live satellite map with thermal detections"
       />
+      <div className="map-action-controls" aria-label="Map actions">
+        <button
+          type="button"
+          title="Reset map view"
+          aria-label="Reset map view"
+          onClick={() => mapRef.current?.setView([21.2, 79.2], 4.35)}
+        >
+          ⌂
+        </button>
+        <button
+          type="button"
+          title="Focus selected signal"
+          aria-label="Focus selected signal"
+          onClick={() => {
+            const matched = detections.find((detection) => detection.id === selected[0]);
+            if (matched) mapRef.current?.flyTo(matched.position, 9, { duration: 0.45 });
+          }}
+        >
+          ◎
+        </button>
+      </div>
+      <div className="map-toolbar" aria-label="Map tools">
+        <button
+          type="button"
+          className={measureActive ? "is-active" : ""}
+          onClick={() => {
+            const nextActive = !measureActive;
+            measureActiveRef.current = nextActive;
+            measureStartRef.current = null;
+            setMeasureActive(nextActive);
+            notify(nextActive ? "Click two points to measure distance" : "Measurement cancelled");
+          }}
+        >
+          <b>⌁</b><span>Measure</span>
+        </button>
+        <button type="button" onClick={handleLocation}><b>●</b><span>Location</span></button>
+        <button type="button" className={showLayers ? "is-active" : ""} onClick={onToggleLayers}><b>▣</b><span>Layers</span></button>
+        <button type="button" onClick={() => onRangeChange?.(range === "Live" ? "24h" : range === "24h" ? "7d" : "Live")}><b>☷</b><span>Timeline</span></button>
+        <button type="button" onClick={handleCapture} disabled={isCapturing}><b>▣</b><span>{isCapturing ? "Saving" : "Capture"}</span></button>
+        <button type="button" onClick={handleShare}><b>↗</b><span>Share</span></button>
+        <button type="button" onClick={() => setShowHelp((visible) => !visible)}><b>?</b><span>Help</span></button>
+        <button type="button" onClick={() => setViewMode((mode) => mode === "satellite" ? "street" : "satellite")}><b>□</b><span>{viewMode === "satellite" ? "Street" : "Satellite"}</span></button>
+        <button type="button" onClick={onMinimize} aria-label="Minimize map"><b>×</b><span>Close</span></button>
+      </div>
+      {mapFeedback && <div className="map-feedback" role="status">{mapFeedback}</div>}
+      {showHelp && (
+        <div className="map-help" role="dialog" aria-label="Map help">
+          <button type="button" onClick={() => setShowHelp(false)} aria-label="Close map help">×</button>
+          <strong>Map controls</strong>
+          <span>Click a hotspot to inspect it. Measure uses two map clicks.</span>
+          <span>Timeline cycles through live, 24-hour, and 7-day activity.</span>
+        </div>
+      )}
       <div className="scan-overlay" aria-hidden="true">
         <div className="scan-radar">
           <div className="scan-radar-sweep" />

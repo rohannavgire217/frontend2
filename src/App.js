@@ -49,8 +49,19 @@ function MapView({ selected, setSelected, onScanAlert, onOpenAlerts }) {
   const [range, setRange] = useState("Live");
   const [showLayers, setShowLayers] = useState(true);
   const [scanMessage, setScanMessage] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isExpanded]);
+
   return (
-    <section className="card map-card">
+    <section className={"card map-card " + (isExpanded ? "is-expanded" : "")}>
       <div className="card-head">
         <div>
           <p>LIVE SITUATIONAL VIEW</p>
@@ -72,6 +83,15 @@ function MapView({ selected, setSelected, onScanAlert, onOpenAlerts }) {
           >
             {showLayers ? "Layers on" : "Layers off"}
           </button>
+          <button
+            className="map-size-button"
+            type="button"
+            title={isExpanded ? "Minimize map" : "Open full map"}
+            aria-label={isExpanded ? "Minimize map" : "Open full map"}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+          >
+            {isExpanded ? "Minimize" : "Full map"}
+          </button>
         </div>
       </div>
       <div className="map">
@@ -80,6 +100,10 @@ function MapView({ selected, setSelected, onScanAlert, onOpenAlerts }) {
           setSelected={setSelected}
           scanning={scanning}
           showLayers={showLayers}
+          range={range}
+          onToggleLayers={() => setShowLayers((visible) => !visible)}
+          onRangeChange={setRange}
+          onMinimize={() => setIsExpanded(false)}
           onScanAlert={(alert) => {
             onScanAlert(alert);
             setScanMessage(`Alert queued: thermal change at ${alert[3]}`);
