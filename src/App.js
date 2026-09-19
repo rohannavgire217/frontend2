@@ -314,27 +314,25 @@ function App() {
     localStorage.setItem("pyrewatch-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
   useEffect(() => {
-    let mounted = true;
-    Promise.allSettled([getBackendHealth(), getEntities()]).then(([healthResult, entitiesResult]) => {
-      if (!mounted) return;
-      setBackendStatus(healthResult.status === "fulfilled" ? "connected" : "offline");
-      if (entitiesResult.status === "fulfilled" && entitiesResult.value.length > 0) {
-        const backendAlerts = entitiesResult.value.map((entity, index) => [
-          `EN-${String(index + 1).padStart(4, "0")}`,
-          "Watch",
-          "Thermal entity received",
-          `${entity.latitude.toFixed(3)}, ${entity.longitude.toFixed(3)}`,
-          "72",
-          "amber",
-        ]);
-        setAlertQueue(backendAlerts);
-        setSelected(backendAlerts[0]);
+  const checkBackend = async () => {
+    try {
+      const response = await fetch(
+        "https://backend1-3-zb2a.onrender.com/health"
+      );
+
+      if (response.ok) {
+        setBackendStatus("connected");
+      } else {
+        setBackendStatus("Online");
       }
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    } catch (error) {
+      console.error("Backend connection failed:", error);
+      setBackendStatus("offline");
+    }
+  };
+
+  checkBackend();
+}, []);
   useEffect(() => {
     const launchMessageTimer = window.setInterval(() => {
       setLaunchMessageIndex((current) => (current + 1) % 4);
