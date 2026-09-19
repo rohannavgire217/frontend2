@@ -45,7 +45,7 @@ const facilities = [
   ["Hazira LNG Terminal", "Gas terminal", "7", "68"],
 ];
 
-function MapView({ selected, setSelected, onScanAlert, onOpenAlerts }) {
+function MapView({ selected, setSelected, onScanAlert, onOpenAlerts, firmsData }) {
   const [scanning, setScanning] = useState(true);
   const [range, setRange] = useState("Live");
   const [showLayers, setShowLayers] = useState(true);
@@ -324,7 +324,7 @@ useEffect(() => {
       );
 
       if (response.ok) {
-        setBackendStatus("connected");
+        setBackendStatus("Health");
       } else {
         setBackendStatus("offline");
       }
@@ -353,6 +353,7 @@ useEffect(() => {
 
   loadFirmsData();
 }, []);
+
   useEffect(() => {
     const launchMessageTimer = window.setInterval(() => {
       setLaunchMessageIndex((current) => (current + 1) % 4);
@@ -432,6 +433,7 @@ useEffect(() => {
         <MapView
           selected={selected}
           setSelected={setSelected}
+          firmsData={firmsData}
           onScanAlert={(alert) =>
             setAlertQueue((queue) => [
               alert,
@@ -509,16 +511,17 @@ useEffect(() => {
       <MapView
         selected={selected}
         setSelected={setSelected}
+        firmsData={firmsData}
         onScanAlert={(alert) =>
           setAlertQueue((queue) => [
             alert,
             ...queue.filter((item) => item[0] !== alert[0]),
           ])
         }
-          onOpenAlerts={() => {
-            setAlertDetail(null);
-            setActive("Alerts");
-          }}
+        onOpenAlerts={() => {
+          setAlertDetail(null);
+          setActive("Alerts");
+        }}
       />
     );
   if (active === "Alerts")
@@ -595,7 +598,7 @@ useEffect(() => {
           </div>
           <div className="top-actions">
             <span className="system-pill">
-              <i /> {backendStatus === "connected" ? "Backend connected" : backendStatus === "Online" ? "Backend Online" : "Connecting backend"}
+              <i /> {backendStatus === "connected" ? "System health" : backendStatus === "Online" ? "System health" : "System health"}
             </span>
             <button
               className="theme-toggle"
