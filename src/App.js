@@ -577,7 +577,7 @@ function App() {
           </div>
           <div className="top-actions">
             <span className="system-pill">
-              <i /> {backendStatus === "connected" ? "Backend connected" : backendStatus === "offline" ? "Backend offline" : "Connecting backend"}
+              <i /> {backendStatus === "connected" ? "Backend connected" : backendStatus === "Online" ? "Backend Online" : "Connecting backend"}
             </span>
             <button
               className="theme-toggle"
