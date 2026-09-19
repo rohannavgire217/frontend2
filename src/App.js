@@ -316,7 +316,7 @@ function App() {
     document.body.dataset.theme = darkMode ? "dark" : "light";
     localStorage.setItem("pyrewatch-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
- useEffect(() => {
+useEffect(() => {
   const checkBackend = async () => {
     try {
       const response = await fetch(
@@ -326,7 +326,7 @@ function App() {
       if (response.ok) {
         setBackendStatus("connected");
       } else {
-        setBackendStatus("Online");
+        setBackendStatus("offline");
       }
     } catch (error) {
       console.error("Backend connection failed:", error);
