@@ -4,7 +4,8 @@ import SignalPulse from "./components/SignalPulse";
 import SatelliteMap from "./components/SatelliteMap";
 import { AnalyticsPage } from "./components/MissionPages";
 import ClassificationPage from "./components/ClassificationPage";
-import { getBackendHealth, getEntities } from "./api";
+import { getBackendHealth, getEntities, getFirms } from "./api";
+
 
 
 const alerts = [
@@ -98,6 +99,7 @@ function MapView({ selected, setSelected, onScanAlert, onOpenAlerts }) {
         <SatelliteMap
           selected={selected}
           setSelected={setSelected}
+          firmsData={firmsData}
           scanning={scanning}
           showLayers={showLayers}
           range={range}
@@ -301,6 +303,7 @@ function App() {
   const [alertDetail, setAlertDetail] = useState(null);
   const [liveFeed, setLiveFeed] = useState(true);
   const [backendStatus, setBackendStatus] = useState("connecting");
+  const [firmsData, setFirmsData] = useState([]);
   const liveCursor = useRef(0);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("pyrewatch-theme") === "dark",
@@ -313,7 +316,7 @@ function App() {
     document.body.dataset.theme = darkMode ? "dark" : "light";
     localStorage.setItem("pyrewatch-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
-  useEffect(() => {
+ useEffect(() => {
   const checkBackend = async () => {
     try {
       const response = await fetch(
@@ -332,6 +335,23 @@ function App() {
   };
 
   checkBackend();
+}, []);
+
+
+useEffect(() => {
+  const loadFirmsData = async () => {
+    try {
+      const fires = await getFirms();
+
+      console.log("NASA FIRMS data:", fires);
+
+      setFirmsData(fires);
+    } catch (error) {
+      console.error("NASA FIRMS request failed:", error);
+    }
+  };
+
+  loadFirmsData();
 }, []);
   useEffect(() => {
     const launchMessageTimer = window.setInterval(() => {

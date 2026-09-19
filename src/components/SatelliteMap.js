@@ -73,6 +73,7 @@ const thermalLocationNames = [
 function SatelliteMap({
   selected,
   setSelected,
+  firmsData = [],
   scanning = true,
   showLayers = true,
   range = "Live",
@@ -85,7 +86,9 @@ function SatelliteMap({
   const mapShellRef = useRef(null);
   const mapRef = useRef(null);
   const imageryLayerRef = useRef(null);
-  const streetLayerRef = useRef(null);
+const streetLayerRef = useRef(null);
+const firmsLayerRef = useRef(null);
+
   const measureActiveRef = useRef(false);
   const measureStartRef = useRef(null);
   const initialView = useRef(true);
@@ -280,18 +283,95 @@ function SatelliteMap({
   }, [setSelected]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const imageryLayer = imageryLayerRef.current;
-    const streetLayer = streetLayerRef.current;
-    if (!map || !imageryLayer || !streetLayer) return;
-    if (viewMode === "street") {
-      map.removeLayer(imageryLayer);
-      streetLayer.addTo(map);
-    } else {
-      map.removeLayer(streetLayer);
-      imageryLayer.addTo(map);
+  const map = mapRef.current;
+
+  if (!map) return;
+
+  // Remove previous FIRMS markers
+  if (firmsLayerRef.current) {
+    firmsLayerRef.current.clearLayers();
+  }
+
+  const firmsLayer = L.layerGroup();
+
+  firmsData.forEach((fire, index) => {
+    const latitude = Number(fire.latitude);
+    const longitude = Number(fire.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return;
     }
-  }, [viewMode]);
+
+    const frp = Number(fire.frp) || 0;
+
+    // Choose marker intensity based on Fire Radiative Power
+    let markerColor = "#ffbb4a";
+
+    if (frp >= 50) {
+      markerColor = "#ff6653";
+    } else if (frp < 10) {
+      markerColor = "#48d09e";
+    }
+
+    const marker = L.circleMarker(
+      [latitude, longitude],
+      {
+        radius: 7,
+        color: markerColor,
+        weight: 2,
+        fillColor: markerColor,
+        fillOpacity: 0.8,
+      }
+    );
+
+    marker.bindTooltip(
+      `
+        <b>NASA FIRMS Fire Detection</b>
+        <small>
+          FIRMS-${String(index + 1).padStart(4, "0")}<br/>
+          Latitude: ${latitude.toFixed(4)}<br/>
+          Longitude: ${longitude.toFixed(4)}<br/>
+          FRP: ${frp.toFixed(2)} MW<br/>
+          Confidence: ${fire.confidence || "N/A"}<br/>
+          Date: ${fire.acq_date || "N/A"}<br/>
+          Time: ${fire.acq_time || "N/A"}<br/>
+          Satellite: ${fire.satellite || "N/A"}
+        </small>
+      `,
+      {
+        direction: "top",
+        className: "thermal-label",
+        offset: [0, -5],
+      }
+    );
+
+    marker.on("click", () => {
+      const severity = frp >= 50 ? "Critical" : "Watch";
+
+      setSelected([
+        `FIRMS-${String(index + 1).padStart(4, "0")}`,
+        severity,
+        "NASA FIRMS thermal detection",
+        `${latitude.toFixed(3)}°, ${longitude.toFixed(3)}°`,
+        fire.acq_time || "now",
+        String(Math.round(frp)),
+        frp >= 50 ? "coral" : "amber",
+      ]);
+    });
+
+    marker.addTo(firmsLayer);
+  });
+
+  firmsLayer.addTo(map);
+  firmsLayerRef.current = firmsLayer;
+
+  return () => {
+    firmsLayer.remove();
+    if (firmsLayerRef.current === firmsLayer) {
+      firmsLayerRef.current = null;
+    }
+  };
+}, [firmsData, setSelected]);
 
   useEffect(() => {
     if (!mapRef.current) return;
