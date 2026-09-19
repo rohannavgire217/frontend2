@@ -309,6 +309,12 @@ function App() {
     () => localStorage.getItem("pyrewatch-theme") === "dark",
   );
   const dayPart = getDayPart();
+  const systemStatusLabel =
+    backendStatus === "connected" || backendStatus === "Health"
+      ? "System status · Healthy"
+      : backendStatus === "offline"
+        ? "System status · Offline"
+        : "System status · Checking";
   useEffect(() => {
     document.body.dataset.dayPart = dayPart;
   }, [dayPart]);
@@ -598,7 +604,7 @@ useEffect(() => {
           </div>
           <div className="top-actions">
             <span className="system-pill">
-              <i /> {backendStatus === "connected" ? "System health" : backendStatus === "Online" ? "System health" : "System health"}
+              <i /> {systemStatusLabel}
             </span>
             <button
               className="theme-toggle"
