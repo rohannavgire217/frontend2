@@ -280,7 +280,7 @@ const firmsLayerRef = useRef(null);
       imageryLayerRef.current = null;
       streetLayerRef.current = null;
     };
-  }, [setSelected]);
+}, [setSelected, selectDetection]);
 
 
   useEffect(() => {
