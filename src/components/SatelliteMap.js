@@ -282,6 +282,7 @@ const firmsLayerRef = useRef(null);
     };
   }, [setSelected]);
 
+
   useEffect(() => {
   const map = mapRef.current;
 

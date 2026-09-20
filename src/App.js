@@ -4,7 +4,7 @@ import SignalPulse from "./components/SignalPulse";
 import SatelliteMap from "./components/SatelliteMap";
 import { AnalyticsPage } from "./components/MissionPages";
 import ClassificationPage from "./components/ClassificationPage";
-import { getBackendHealth, getEntities, getFirms } from "./api";
+import { getFirms } from "./api";
 
 
 
