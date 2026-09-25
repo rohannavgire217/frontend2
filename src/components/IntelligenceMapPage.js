@@ -129,7 +129,11 @@ function FusionCard({ signal, onClose, onVerify }) {
         </div>
         <div className="fusion-evidence-item">
           <span>Historical baseline:</span>
-          <b>{Number(signal.baselineMultiple || 1.0).toFixed(1)}× normal (Learned site baseline)</b>
+          <b>
+            {signal.baselineStatus === "INSUFFICIENT_HISTORY" || signal.baselineMultiple == null
+              ? "INSUFFICIENT HISTORY (< 3 historical passes)"
+              : `${Number(signal.baselineMultiple).toFixed(1)}× normal (Learned 90-day baseline)`}
+          </b>
         </div>
         <div className="fusion-evidence-item">
           <span>Sentinel-2 context:</span>
@@ -443,11 +447,17 @@ function Inspector({ signal, onVerify }) {
       <div className="baseline-panel">
         <div className="baseline-head">
           <span>IS IT UNUSUAL FOR THIS PLACE?</span>
-          <b>{Number(signal.baselineMultiple || 1.0).toFixed(1)}× baseline</b>
+          <b>
+            {signal.baselineStatus === "INSUFFICIENT_HISTORY" || signal.baselineMultiple == null
+              ? "INSUFFICIENT HISTORY"
+              : `${Number(signal.baselineMultiple).toFixed(1)}× baseline`}
+          </b>
         </div>
         <MiniChart values={signal.history} />
         <small>
-          Self-baseline evaluates current anomaly against learned historical median (BOCPD changepoint detection).
+          {signal.baselineStatus === "INSUFFICIENT_HISTORY" || signal.baselineMultiple == null
+            ? "Insufficient historical passes (< 3) in 90-day window to compute statistical baseline."
+            : `Self-baseline evaluates current anomaly against 90-day median (${signal.baselineFRP ?? signal.history?.[0]} MW) with statistical Z-score.`}
         </small>
       </div>
 

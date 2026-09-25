@@ -475,7 +475,7 @@ function InferenceTab() {
             onClick={runInference}
             disabled={status === "loading"}
           >
-            {status === "loading" ? "Executing Neural Inference…" : "⚡ Run Real-Time Classification"}
+            {status === "loading" ? "Executing Geospatial Inference…" : "⚡ Run Real-Time Classification"}
           </button>
         </div>
 
@@ -483,7 +483,7 @@ function InferenceTab() {
         <div className="inference-result-card">
           <div className="card-header">
             <h4>Classification Output &amp; Decision Confidence</h4>
-            <span className="sensor-tag">LightGBM v4.2 Calibrated</span>
+            <span className="sensor-tag">Pyrewatch MCDA Decision Engine</span>
           </div>
 
           {status === "idle" && (
@@ -678,13 +678,13 @@ function IgpsPage() {
           </div>
           <h2>Industrial Fire, Flare &amp; Thermal Source Segregation</h2>
           <p>
-            Five-class LightGBM classification engine with conformal uncertainty bounds,
+            Five-class Geospatial Expert Classification Engine with conformal uncertainty bounds,
             corroborated against GEM, OpenStreetMap, the WRI Power Plant Database, and the NOAA EOG Flare Inventory.
           </p>
         </div>
         <div className="hero-badge">
           <b>CALIBRATED MODEL</b>
-          <span>LightGBM v4.2 NRT</span>
+          <span>Pyrewatch MCDA Engine</span>
         </div>
       </div>
 
