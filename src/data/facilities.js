@@ -1,0 +1,40 @@
+// Prototype reference registry used for spatial evidence fusion.
+// Coordinates are reference points for clustering/association, not facility boundaries.
+export const INDUSTRIAL_FACILITIES = [
+  { id: "IN-PWR-001", name: "Mundra Thermal Power Station", type: "thermal_power", state: "Gujarat", latitude: 22.82349, longitude: 69.55348, persistentExpected: true },
+  { id: "IN-PWR-002", name: "Wanakbori Thermal Power Station", type: "thermal_power", state: "Gujarat", latitude: 22.87254, longitude: 73.35880, persistentExpected: true },
+  { id: "IN-PWR-003", name: "Farakka Super Thermal Power Station", type: "thermal_power", state: "West Bengal", latitude: 24.77273, longitude: 87.89371, persistentExpected: true },
+  { id: "IN-PWR-004", name: "Tanda Thermal Power Station", type: "thermal_power", state: "Uttar Pradesh", latitude: 26.58948, longitude: 82.60124, persistentExpected: true },
+  { id: "IN-PWR-005", name: "Anta Gas Power Station", type: "gas_power", state: "Rajasthan", latitude: 25.17970, longitude: 76.31880, persistentExpected: true },
+  { id: "IN-PWR-006", name: "Ropar Thermal Power Station", type: "thermal_power", state: "Punjab", latitude: 31.04170, longitude: 76.58470, persistentExpected: true },
+  { id: "IN-PWR-007", name: "Parli Thermal Power Station", type: "thermal_power", state: "Maharashtra", latitude: 18.90759, longitude: 76.54295, persistentExpected: true },
+  { id: "IN-PWR-008", name: "Korba West Thermal Power Station", type: "thermal_power", state: "Chhattisgarh", latitude: 22.36400, longitude: 82.67400, persistentExpected: true },
+  { id: "IN-PWR-009", name: "Singrauli Power Cluster", type: "thermal_power", state: "Uttar Pradesh", latitude: 24.10500, longitude: 82.65200, persistentExpected: true },
+  { id: "IN-PWR-010", name: "Bakreshwar Thermal Power Station", type: "thermal_power", state: "West Bengal", latitude: 23.82922, longitude: 87.45103, persistentExpected: true },
+  { id: "IN-REF-001", name: "Jamnagar Refinery Complex", type: "refinery", state: "Gujarat", latitude: 22.30000, longitude: 69.88000, persistentExpected: true },
+  { id: "IN-REF-002", name: "Vadinar Refinery Complex", type: "refinery", state: "Gujarat", latitude: 22.47000, longitude: 69.65000, persistentExpected: true },
+  { id: "IN-REF-003", name: "Panipat Refinery", type: "refinery", state: "Haryana", latitude: 29.48000, longitude: 76.85000, persistentExpected: true },
+  { id: "IN-REF-004", name: "Mathura Refinery", type: "refinery", state: "Uttar Pradesh", latitude: 27.49000, longitude: 77.67000, persistentExpected: true },
+  { id: "IN-REF-005", name: "Visakhapatnam Refinery", type: "refinery", state: "Andhra Pradesh", latitude: 17.69000, longitude: 83.22000, persistentExpected: true },
+  { id: "IN-REF-006", name: "Barauni Refinery", type: "refinery", state: "Bihar", latitude: 25.42000, longitude: 86.05000, persistentExpected: true },
+  { id: "IN-REF-007", name: "Paradip Refinery", type: "refinery", state: "Odisha", latitude: 20.30000, longitude: 86.69000, persistentExpected: true },
+  { id: "IN-REF-008", name: "Kochi Refinery", type: "refinery", state: "Kerala", latitude: 10.04000, longitude: 76.61000, persistentExpected: true },
+  { id: "IN-REF-009", name: "Bina Refinery", type: "refinery", state: "Madhya Pradesh", latitude: 24.17000, longitude: 78.18000, persistentExpected: true },
+  { id: "IN-REF-010", name: "Mumbai Refinery Cluster", type: "refinery", state: "Maharashtra", latitude: 19.02000, longitude: 72.88000, persistentExpected: true },
+  { id: "IN-STL-001", name: "Hazira Steel Complex", type: "steel", state: "Gujarat", latitude: 21.12000, longitude: 72.67000, persistentExpected: true },
+  { id: "IN-STL-002", name: "Bhilai Steel Plant", type: "steel", state: "Chhattisgarh", latitude: 21.21000, longitude: 81.38000, persistentExpected: true },
+  { id: "IN-STL-003", name: "Rourkela Steel Plant", type: "steel", state: "Odisha", latitude: 22.25000, longitude: 84.88000, persistentExpected: true },
+  { id: "IN-STL-004", name: "Vijayanagar Steel Works", type: "steel", state: "Karnataka", latitude: 15.18000, longitude: 76.63000, persistentExpected: true },
+  { id: "IN-STL-005", name: "Durgapur Steel Plant", type: "steel", state: "West Bengal", latitude: 23.52000, longitude: 87.31000, persistentExpected: true },
+  { id: "IN-LNG-001", name: "Dahej LNG Terminal", type: "lng_terminal", state: "Gujarat", latitude: 21.71000, longitude: 72.61000, persistentExpected: true },
+  { id: "IN-LNG-002", name: "Hazira LNG Terminal", type: "lng_terminal", state: "Gujarat", latitude: 21.13000, longitude: 72.65000, persistentExpected: true },
+  { id: "IN-LNG-003", name: "Kochi LNG Terminal", type: "lng_terminal", state: "Kerala", latitude: 9.96000, longitude: 76.33000, persistentExpected: true },
+];
+
+export const FACILITY_TYPE_LABELS = {
+  thermal_power: "Thermal power",
+  gas_power: "Gas power",
+  refinery: "Refinery",
+  steel: "Steel / furnace",
+  lng_terminal: "LNG / gas terminal",
+};
